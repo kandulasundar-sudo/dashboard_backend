@@ -319,6 +319,10 @@ app.get("/api/refresh-FDP-data", async (req, res) => { //FDP
   res.status(200).json({ message: "FDP data refresh triggered successfully." });
 });
 
+app.get("/api/refresh-executives-data", async (req, res) => { //FDP
+  await fetchAndStoreExecutives();
+  res.status(200).json({ message: "FDP data refresh triggered successfully." });
+});
 
 // API endpoint to serve the stored "D-1 Reservation" data
 app.get("/api/sheets-data", (req, res) => {
@@ -382,7 +386,7 @@ app.get("/api/RSPS-data", (req, res) => { //RSPS
 
 app.get("/api/executives-data", (req, res) => { //RSPS
   if (executivesData) {
-    fetchAndStoreExecutives();
+    
     res.json(executivesData);
   } else {
     res.status(503).json({
