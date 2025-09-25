@@ -412,24 +412,26 @@ await fetchAndStoreTracking();
   res.status(200).json({ message: "All data refreshed successfully" });
 });
 
-app.get("/api/tracking-data", (req, res) => {
-    // 1. Get the tracking_id from the query parameters
-    const trackingIdToFind = req.query.tracking_id;
+app.get("/api/tracking-data", async (req, res) => {
+    // 1. Get the tracking_id string from the query parameters
+    const trackingIdString = req.query.tracking_id;
 
-    // Handle case where data isn't loaded yet or tracking_id is missing
+    // Handle case where data isn't loaded yet
     if (!Tracking_view || !Tracking_view.values) {
-        return res.status(503).json({
-            error: "Data is not yet available or failed to load. Please try again in a few moments."
-        });
+       await fetchAndStoreTracking();
     }
 
-    if (!trackingIdToFind) {
+    // Handle case where tracking_id is missing
+    if (!trackingIdString) {
         return res.status(400).json({
-            error: "Please provide a tracking_id query parameter."
+            error: "Please provide one or more tracking_id query parameters, separated by commas."
         });
     }
 
-    // 2. Parse the headers and find the index of the "tracking_id" column
+    // 2. Split the input string into an array of IDs
+    const trackingIdsToFind = trackingIdString.split(',').map(id => id.trim().toLowerCase());
+
+    // 3. Parse the headers and find the index of the "tracking_id" column
     const headers = Tracking_view.values[0].map(h => h.trim());
     const trackingIdIndex = headers.indexOf('tracking_id');
 
@@ -439,23 +441,27 @@ app.get("/api/tracking-data", (req, res) => {
         });
     }
 
-    // 3. Find the row that matches the provided tracking ID
+    // 4. Find all rows that match ANY of the provided tracking IDs
     const dataRows = Tracking_view.values.slice(1);
-    const foundRow = dataRows.find(row => 
-        row[trackingIdIndex] && String(row[trackingIdIndex]).toLowerCase().trim() === trackingIdToFind.toLowerCase().trim()
+    const foundRows = dataRows.filter(row =>
+        row[trackingIdIndex] && trackingIdsToFind.includes(String(row[trackingIdIndex]).toLowerCase().trim())
     );
 
-    // 4. If a matching row is found, format it and send the response
-    if (foundRow) {
-        const resultObject = {};
-        headers.forEach((header, index) => {
-            resultObject[header] = foundRow[index];
+    // 5. If matching rows are found, format them and send the response
+    if (foundRows.length > 0) {
+        // Map each found row to an object with header keys
+        const formattedResults = foundRows.map(foundRow => {
+            const resultObject = {};
+            headers.forEach((header, index) => {
+                resultObject[header] = foundRow[index];
+            });
+            return resultObject;
         });
-        res.json({ range: Tracking_view.range, values: [headers, foundRow] });
+        res.json({ range: Tracking_view.range, values: [headers, ...foundRows], data: formattedResults });
     } else {
-        // 5. If no match is found, send a 404 Not Found response
+        // 6. If no match is found, send a 404 Not Found response
         res.status(404).json({
-            error: "No records found for the specified tracking ID."
+            error: "No records found for the specified tracking IDs."
         });
     }
 });
