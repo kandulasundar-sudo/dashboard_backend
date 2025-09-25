@@ -284,13 +284,19 @@ fetchAndStoreExecutives();
 fetchAndStoreTracking();
 
 // Schedule data refresh every 60 seconds
-setInterval(fetchAndStoreData, 60000);
-setInterval(fetchDataForReliability, 60000);
-setInterval(fetchAndStoreeagle, 60000);
-setInterval(fetchAndStoreFDPMuiltiSheets, 60000);
-setInterval(fetchAndStoreRSPSMul,60000);
-setInterval(fetchAndStoreExecutives,60000);
-setInterval(fetchAndStoreTracking, 60000);
+async function trackAllRecursively() {
+    await fetchAndStoreData();
+    await fetchDataForReliability();
+    await fetchAndStoreeagle();
+    await fetchAndStoreFDPMuiltiSheets();
+    await fetchAndStoreRSPSMul();
+    await fetchAndStoreExecutives();
+    await fetchAndStoreTracking();
+
+    setTimeout(trackAllRecursively, 60000);
+}
+trackAllRecursively();
+
 
 // Root route to show the server is working
 app.get("/", (req, res) => {
