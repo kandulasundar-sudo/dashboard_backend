@@ -325,23 +325,21 @@ app.get("/api/refresh-executives-data", async (req, res) => { //FDP
 });
 
 // API endpoint to serve the stored "D-1 Reservation" data
-app.get("/api/sheets-data", (req, res) => {
+app.get("/api/sheets-data", async (req, res) => {
   if (sheetData) {
     res.json(sheetData);
   } else {
-    res.status(503).json({
-      error: "Data is not yet available or failed to load. Please try again in a few moments."
-    });
+    await fetchAndStoreData();
+    res.json(sheetData);
   }
 });
 
-app.get("/api/eagle-data", (req, res) => { //eagle
+app.get("/api/eagle-data", async (req, res) => { //eagle
   if (eagleeye) {
     res.json(eagleeye);
   } else {
-    res.status(503).json({
-      error: "Data is not yet available or failed to load. Please try again in a few moments."
-    });
+    await fetchAndStoreeagle();
+    res.json(eagleeye);
   }
 });
 
@@ -358,13 +356,12 @@ app.get("/api/FDP-data", async (req, res) => { //FDP
 
 
 // API endpoint to serve the stored "Reliability" data
-app.get("/api/reliability-data", (req, res) => {
+app.get("/api/reliability-data", async (req, res) => {
   if (reliabilityweek) {
     res.json(reliabilityweek);
   } else {
-    res.status(503).json({
-      error: "Data is not yet available or failed to load. Please try again in a few moments."
-    });
+    await fetchDataForReliability();
+    res.json(reliabilityweek);
   }
 });
 
@@ -373,31 +370,40 @@ app.get("/api/refresh-RSPS-data", async (req, res) => { //RSPS
   res.status(200).json({ message: "RSPS data refresh triggered successfully." });
 });
 
-app.get("/api/RSPS-data", (req, res) => { //RSPS
+app.get("/api/RSPS-data", async (req, res) => { //RSPS
   if (RSPS_view) {
-    fetchAndStoreRSPSMul();
+    
     res.json(RSPS_view);
   } else {
-    res.status(503).json({
-      error: "Data is not yet available or failed to load. Please try again in a few moments."
-    });
+    await fetchAndStoreRSPSMul();
+    res.json(RSPS_view);
   }
 });
 
-app.get("/api/executives-data", (req, res) => { //RSPS
+app.get("/api/executives-data", async (req, res) => { //RSPS
   if (executivesData) {
     
     res.json(executivesData);
   } else {
-    res.status(503).json({
-      error: "Data is not yet available or failed to load. Please try again in a few moments."
-    });
+    await fetchAndStoreExecutives();
+    res.json(executivesData);
   } 
 });
 
 app.get("/api/refresh-Tracking-data", async (req, res) => { //tracking
   await fetchAndStoreTracking();
   res.status(200).json({ message: "tracking data refresh triggered successfully." });
+});
+
+app.get("/api/refresh-all-data", async (req, res) => { //tracking
+ await  fetchAndStoreData();
+await fetchDataForReliability();
+await fetchAndStoreeagle();
+await fetchAndStoreFDPMuiltiSheets();
+await fetchAndStoreRSPSMul();
+await fetchAndStoreExecutives();
+await fetchAndStoreTracking();
+  res.status(200).json({ message: "All data refreshed successfully" });
 });
 
 app.get("/api/tracking-data", (req, res) => {
@@ -451,6 +457,5 @@ app.get("/api/tracking-data", (req, res) => {
 app.listen(3001, ()=> console.log("Backend running on http://localhost:3001"));
 
 // export default app;
-
 
 
